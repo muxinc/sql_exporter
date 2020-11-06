@@ -27,7 +27,7 @@ func init() {
 }
 
 // Read attempts to parse the given config and return a file
-// object
+// object. Fills in any referenced environment variables as needed.
 func Read(path string) (File, error) {
 	f := File{}
 
@@ -41,6 +41,7 @@ func Read(path string) (File, error) {
 	if err != nil {
 		return f, err
 	}
+	buf = []byte(os.ExpandEnv(string(buf)))
 
 	if err := yaml.Unmarshal(buf, &f); err != nil {
 		return f, err
