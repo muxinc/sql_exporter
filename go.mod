@@ -11,7 +11,9 @@ require (
 	github.com/go-sql-driver/mysql v1.4.1
 	github.com/go-stack/stack v1.8.0 // indirect
 	github.com/jmoiron/sqlx v1.2.0
+	github.com/kylelemons/godebug v0.0.0-20170820004349-d65d576e9348
 	github.com/lib/pq v1.3.0
+	github.com/mailru/go-clickhouse v1.3.0
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.1 // indirect
 	github.com/prometheus/client_golang v1.3.0
