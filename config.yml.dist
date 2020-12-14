@@ -125,3 +125,41 @@ jobs:
       WHERE partition IN
           (SELECT max(partition)
           FROM my_athena_db.some_table);
+- name: "clickhouse"
+  interval: '5m'
+  connections:
+  - 'clickhouse://USERNAME:PASSWORD@localhost:9090/default'
+  queries:
+  - name: "http_requests_hist"
+    help: "HTTP requests histogram buckets"
+    type: "histogram"
+    labels:
+      - "status_code"
+    hist_values:
+      - name: "http_request_duration_hist"
+        count: "http_request_duration_hist_count"
+        sum: "http_request_duration_hist_sum"
+        buckets:
+          - name: "http_request_duration_hist_bucket_b100"
+            value: "0.1"
+          - name: "http_request_duration_hist_bucket_b500"
+            value: "0.5"
+          - name: "http_request_duration_hist_bucket_b1000"
+            value: "1.0"
+          - name: "http_request_duration_hist_bucket_b2500"
+            value: "2.5"
+          - name: "http_request_duration_hist_bucket_b5000"
+            value: "5.0"
+    query:  |
+            SELECT
+              toString(http_code) AS status_code,
+              sum(http_request_duration_100ms) AS http_request_duration_hist_bucket_b100,
+              sum(http_request_duration_500ms) AS http_request_duration_hist_bucket_b500,
+              sum(http_request_duration_1000ms) AS http_request_duration_hist_bucket_b1000,
+              sum(http_request_duration_2500ms) AS http_request_duration_hist_bucket_b2500,
+              sum(http_request_duration_5000ms) AS http_request_duration_hist_bucket_b5000,
+              sum(http_request_duration_ms) AS http_request_duration_hist_sum,
+              count(*) AS http_request_duration_hist_count
+            FROM http_requests
+            GROUP BY
+              status_code;

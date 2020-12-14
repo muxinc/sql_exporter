@@ -1,6 +1,7 @@
 package main
 
 import (
+	"io"
 	"io/ioutil"
 	"os"
 	"sync"
@@ -29,15 +30,18 @@ func init() {
 // Read attempts to parse the given config and return a file
 // object. Fills in any referenced environment variables as needed.
 func Read(path string) (File, error) {
-	f := File{}
-
 	fh, err := os.Open(path)
 	if err != nil {
-		return f, err
+		return File{}, err
 	}
 	defer fh.Close()
+	return parseConfig(fh)
+}
 
-	buf, err := ioutil.ReadAll(fh)
+func parseConfig(r io.Reader) (File, error) {
+	f := File{}
+
+	buf, err := ioutil.ReadAll(r)
 	if err != nil {
 		return f, err
 	}
@@ -76,17 +80,35 @@ type connection struct {
 	user     string
 }
 
+// HistValue represents a mapper for prometheus histogram with definitions
+// for count, sum and series of bucket.
+type HistValue struct {
+	Name    string    `yaml:"string"`
+	Count   string    `yaml:"count"`
+	Sum     string    `yaml:"sum"`
+	Buckets []*Bucket `yaml:"buckets"`
+}
+
+// Bucket represents mapping of column name to bucket upper bound,
+// such as `"response_duration_500ms"` can be mapped to `"0.5"`.
+type Bucket struct {
+	Name  string `yaml:"name"`
+	Value string `yaml:"value"`
+}
+
 // Query is an SQL query that is executed on a connection
 type Query struct {
 	sync.Mutex
-	log      log.Logger
-	desc     *prometheus.Desc
-	metrics  map[*connection][]prometheus.Metric
-	jobName  string
-	Name     string   `yaml:"name"`      // the prometheus metric name
-	Help     string   `yaml:"help"`      // the prometheus metric help text
-	Labels   []string `yaml:"labels"`    // expose these columns as labels per gauge
-	Values   []string `yaml:"values"`    // expose each of these as an gauge
-	Query    string   `yaml:"query"`     // a literal query
-	QueryRef string   `yaml:"query_ref"` // references an query in the query map
+	log        log.Logger
+	desc       *prometheus.Desc
+	metrics    map[*connection][]prometheus.Metric
+	jobName    string
+	Name       string       `yaml:"name"`        // the prometheus metric name
+	Help       string       `yaml:"help"`        // the prometheus metric help text
+	Type       string       `yaml:"type"`        // the prometheus metric type (guage, histogram, summary, etc)
+	Labels     []string     `yaml:"labels"`      // expose these columns as labels per gauge
+	Values     []string     `yaml:"values"`      // expose each of these as an gauge
+	HistValues []*HistValue `yaml:"hist_values"` // list of histogram definitions that map column names to prom histogram fields
+	Query      string       `yaml:"query"`       // a literal query
+	QueryRef   string       `yaml:"query_ref"`   // references an query in the query map
 }
